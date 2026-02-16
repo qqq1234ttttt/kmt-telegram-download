@@ -4,7 +4,7 @@ import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")  # Koyeb env var
+BOT_TOKEN = os.getenv("BOT_TOKEN")  # Get token from environment variable
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(func=lambda message: True)
@@ -12,7 +12,7 @@ def handle_message(message):
     text = message.text
 
     if not text or "tiktok.com" not in text:
-        bot.reply_to(message, "TikTok link ပို့ပေးပါ 🙂")
+        bot.reply_to(message, "KMT Botမှကြိုဆိုပါတယ် TikTok Video Link ပို့ပေးပါ 🙂")
         return
 
     bot.reply_to(message, "Download လုပ်နေပါတယ်... ခဏစောင့်နော် ⏳")
@@ -34,8 +34,8 @@ def handle_message(message):
 
         os.remove(filename)
 
-    except Exception:
-        bot.reply_to(message, "Download မအောင်မြင်ပါ 😢")
+    except Exception as e:
+        bot.reply_to(message, f"Download မအောင်မြင်ပါ 😢 Error: {e}")
 
 # --- Simple web server for Koyeb ---
 class Handler(BaseHTTPRequestHandler):
