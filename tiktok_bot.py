@@ -1,12 +1,16 @@
+import os
 import telebot
 import yt_dlp
-import os
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from flask import Flask, request
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-bot = telebot.TeleBot(BOT_TOKEN)
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN environment variable not set")
 
+bot = telebot.TeleBot(BOT_TOKEN)
+app = Flask(__name__)
+
+# ---------- Video Download Logic ----------
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     text = message.text
@@ -52,19 +56,23 @@ def handle_message(message):
     except Exception as e:
         bot.reply_to(message, f"Download မအောင်မြင်ပါ 😢\n{e}")
 
-# --- Web server for Koyeb / Render ---
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.end_headers()
-        self.wfile.write(b"Bot is running")
+# ---------- Flask Webhook Routes ----------
+@app.route('/')
+def index():
+    return "Bot is running (Webhook mode)"
 
-def run_web():
-    port = int(os.getenv("PORT", "8000"))
-    server = HTTPServer(("0.0.0.0", port), Handler)
-    server.serve_forever()
+@app.route(f'/{BOT_TOKEN}', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_str = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_str)
+        bot.process_new_updates([update])
+        return "OK", 200
+    else:
+        return "Unsupported Media Type", 415
 
-threading.Thread(target=run_web, daemon=True).start()
-
-print("Bot running...")
-bot.infinity_polling()
+# ---------- Main Entry Point ----------
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    # Webhook ကို ဒီမှာ အလိုအလျောက် set မလုပ်ဘဲ Render ပေါ်တင်ပြီးမှ တစ်ကြိမ် terminal ကနေ run ပါ
+    app.run(host="0.0.0.0", port=port)
